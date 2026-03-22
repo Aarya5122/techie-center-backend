@@ -15,6 +15,20 @@ const UPDATABLE_FIELDS = [
 
 const SALT_ROUNDS = 10;
 
+const MAX_PAGE_SIZE = 1000;
+const DEFAULT_PAGE_SIZE = 100;
+
+function parsePositiveInt(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  const n = Number.parseInt(String(value), 10);
+  if (!Number.isFinite(n) || n < 1) {
+    return null;
+  }
+  return n;
+}
+
 function isMissingString(value) {
   return (
     value === undefined ||
@@ -41,12 +55,48 @@ function updateEmptyRequiredFieldsPayload(missing) {
 
 async function getAllUsers(req, res, next) {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const page = parsePositiveInt(req.query.page, 1);
+    const requestedSize = parsePositiveInt(
+      req.query.pageSize,
+      DEFAULT_PAGE_SIZE
+    );
+
+    if (page === null || requestedSize === null) {
+      return res.status(400).json({
+        error: {
+          message:
+            "page and pageSize must be positive integers (pageSize max 100)",
+        },
+      });
+    }
+
+    const pageSize = Math.min(requestedSize, MAX_PAGE_SIZE);
+    const skip = (page - 1) * pageSize;
+
+    const [total, users] = await Promise.all([
+      User.countDocuments(),
+      User.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize),
+    ]);
+
     const list = users.map((user) => {
       const userId = user._id.toString();
       return { ...user.toJSON(), userId };
     });
-    res.json({ users: list });
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+
+    res.json({
+      users: list,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    });
   } catch (err) {
     next(err);
   }
