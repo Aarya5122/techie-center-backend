@@ -127,11 +127,36 @@ async function updateUser(req, res, next) {
     ) {
       missing.push("email");
     }
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "password") &&
+      !isMissingString(updates.password)
+    ) {
+      if (
+        !Object.prototype.hasOwnProperty.call(body, "oldPassword") ||
+        isMissingString(body.oldPassword)
+      ) {
+        missing.push("oldPassword");
+      }
+    }
+
     if (missing.length > 0) {
       return res.status(400).json(missingRequiredFieldsPayload(missing));
     }
 
     if (Object.prototype.hasOwnProperty.call(updates, "password")) {
+      const userWithPassword = await User.findById(userId).select("+password");
+      if (!userWithPassword) {
+        return res.status(404).json({ error: { message: "User not found" } });
+      }
+      const oldPasswordValid = await bcrypt.compare(
+        body.oldPassword,
+        userWithPassword.password
+      );
+      if (!oldPasswordValid) {
+        return res.status(401).json({
+          error: { message: "Current password is incorrect" },
+        });
+      }
       updates.password = await bcrypt.hash(updates.password, SALT_ROUNDS);
     }
 
