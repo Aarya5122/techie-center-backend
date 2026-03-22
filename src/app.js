@@ -6,7 +6,7 @@ const { errorMiddleware } = require("./middleware/error.middleware");
 const app = express();
 
 app.use(express.json());
-app.use("/api", apiRouter);
+app.    use("/api", apiRouter);
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
