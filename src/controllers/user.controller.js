@@ -255,6 +255,28 @@ async function getUserById(req, res, next) {
   }
 }
 
+async function deleteUser(req, res, next) {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(404).json({ error: { message: "User not found" } });
+    }
+
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ error: { message: "User not found" } });
+    }
+
+    res.status(200).json({
+      deleted: true,
+      userId: user._id.toString(),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createUser(req, res, next) {
   try {
     const {
@@ -415,4 +437,10 @@ async function updateUser(req, res, next) {
   }
 }
 
-module.exports = { getAllUsers, getUserById, createUser, updateUser };
+module.exports = {
+  getAllUsers,
+  getUserById,
+  deleteUser,
+  createUser,
+  updateUser,
+};
