@@ -53,3 +53,4 @@
     - Supported get all users
     - Supported filter by email in a case insensitive,equals match flow.
     - Supported email validation.
+    - Support decoded format of filter value.
