@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { User } = require("../models/user.model");
+const { isValidEmail, normalizeEmail } = require("../utils/email.util");
 
 const UPDATABLE_FIELDS = [
   "email",
@@ -41,6 +42,9 @@ function buildUserListFilter(query) {
     return {};
   }
   const trimmed = emailParam.trim();
+  if (isValidEmail(trimmed)) {
+    return { email: normalizeEmail(trimmed) };
+  }
   return {
     email: {
       $regex: escapeRegex(trimmed),
@@ -167,6 +171,12 @@ async function createUser(req, res, next) {
       return res.status(400).json(createMissingRequiredFieldsPayload(missing));
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        error: { message: "Please provide a valid email address" },
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
     const user = await User.create({
@@ -242,6 +252,14 @@ async function updateUser(req, res, next) {
     ) {
       // missing.push("email");
       delete updates.email;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "email") &&
+      !isValidEmail(updates.email)
+    ) {
+      return res.status(400).json({
+        error: { message: "Please provide a valid email address" },
+      });
     }
     if (
       Object.prototype.hasOwnProperty.call(updates, "password") &&
