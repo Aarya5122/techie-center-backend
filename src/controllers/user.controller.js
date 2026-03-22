@@ -34,23 +34,140 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function buildUserListFilter(query) {
-  const raw = query.email;
-  const emailParam =
-    Array.isArray(raw) && raw.length > 0 ? raw[0] : raw;
-  if (typeof emailParam !== "string" || emailParam.trim() === "") {
-    return {};
+function firstQueryValue(value) {
+  if (Array.isArray(value) && value.length > 0) {
+    return value[0];
   }
-  const trimmed = emailParam.trim();
-  if (isValidEmail(trimmed)) {
-    return { email: normalizeEmail(trimmed) };
+  return value;
+}
+
+/**
+ * Query: filter as JSON string, shape { field, op, value }
+ * e.g. ?filter={"field":"email","op":"eq","value":"user@example.com"}
+ */
+function parseListFilterParam(query) {
+  const raw = firstQueryValue(query.filter);
+  if (raw === undefined || raw === null || raw === "") {
+    return { spec: null, error: null };
+  }
+
+  let parsed;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return { spec: null, error: "filter must be valid JSON." };
+    }
+  } else if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    parsed = raw;
+  } else {
+    return { spec: null, error: "filter must be a JSON object." };
+  }
+
+  if (
+    parsed === null ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed)
+  ) {
+    return {
+      spec: null,
+      error: "filter must be a JSON object with field, op, and value.",
+    };
+  }
+
+  const { field, op, value } = parsed;
+  if (field === undefined || op === undefined || value === undefined) {
+    return {
+      spec: null,
+      error: "filter requires field, op, and value.",
+    };
+  }
+  if (typeof field !== "string" || typeof op !== "string") {
+    return {
+      spec: null,
+      error: "filter field and op must be strings.",
+    };
+  }
+
+  const valueStr =
+    typeof value === "string"
+      ? value
+      : value === null || value === undefined
+        ? ""
+        : String(value);
+
+  if (valueStr.trim() === "") {
+    return { spec: null, error: "filter value cannot be empty." };
+  }
+
+  return {
+    spec: {
+      field: field.trim().toLowerCase(),
+      op: op.trim().toLowerCase(),
+      value: valueStr.trim(),
+    },
+    error: null,
+  };
+}
+
+function mongoFilterFromListSpec(spec) {
+  const { field, op, value } = spec;
+
+  if (field !== "email") {
+    return {
+      filter: {},
+      error: `Unsupported filter field: ${field}. Supported: email.`,
+    };
+  }
+
+  const normalizedOp =
+    op === "equals" ? "eq" : op === "like" ? "contains" : op;
+
+  if (!["eq", "contains"].includes(normalizedOp)) {
+    return {
+      filter: {},
+      error: "filter op must be 'eq', 'contains'.",
+    };
+  }
+
+  if (normalizedOp === "eq") {
+    return { filter: { email: normalizeEmail(value) }, error: null };
+  }
+  if (normalizedOp === "contains") {
+    return {
+      filter: {
+        email: {
+          $regex: escapeRegex(value),
+          $options: "i",
+        },
+      },
+      error: null,
+    };
+  }
+
+  if (isValidEmail(value)) {
+    return { filter: { email: normalizeEmail(value) }, error: null };
   }
   return {
-    email: {
-      $regex: escapeRegex(trimmed),
-      $options: "i",
+    filter: {
+      email: {
+        $regex: escapeRegex(value),
+        $options: "i",
+      },
     },
+    error: null,
   };
+}
+
+function buildUserListFilter(query) {
+  const { spec, error } = parseListFilterParam(query);
+  if (error) {
+    return { filter: {}, error };
+  }
+  if (!spec) {
+    return { filter: {}, error: null };
+  }
+  return mongoFilterFromListSpec(spec);
 }
 
 function isMissingString(value) {
@@ -97,7 +214,10 @@ async function getAllUsers(req, res, next) {
     const pageSize = Math.min(requestedSize, MAX_PAGE_SIZE);
     const skip = (page - 1) * pageSize;
 
-    const filter = buildUserListFilter(req.query);
+    const { filter, error: filterError } = buildUserListFilter(req.query);
+    if (filterError) {
+      return res.status(400).json({ error: { message: filterError } });
+    }
 
     const [total, users] = await Promise.all([
       User.countDocuments(filter),
