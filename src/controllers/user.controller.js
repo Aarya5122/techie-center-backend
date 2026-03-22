@@ -119,30 +119,30 @@ async function updateUser(req, res, next) {
       Object.prototype.hasOwnProperty.call(updates, "password") &&
       isMissingString(updates.password)
     ) {
-      missing.push("password");
+      // missing.push("password");
+      delete updates.password;
     }
     if (
       Object.prototype.hasOwnProperty.call(updates, "name") &&
       isMissingString(updates.name)
     ) {
-      missing.push("name");
+      // missing.push("name");
+      delete updates.name;
     }
     if (
       Object.prototype.hasOwnProperty.call(updates, "email") &&
       isMissingString(updates.email)
     ) {
-      missing.push("email");
+      // missing.push("email");
+      delete updates.email;
     }
     if (
       Object.prototype.hasOwnProperty.call(updates, "password") &&
-      !isMissingString(updates.password)
+      !Object.prototype.hasOwnProperty.call(body, "oldPassword") ||
+      isMissingString(body.oldPassword)
     ) {
-      if (
-        !Object.prototype.hasOwnProperty.call(body, "oldPassword") ||
-        isMissingString(body.oldPassword)
-      ) {
-        missing.push("oldPassword");
-      }
+      // missing.push("oldPassword");
+      return res.status(400).json({ error: { message: "Old password is required to update new password" } });
     }
 
     if (missing.length > 0) {
