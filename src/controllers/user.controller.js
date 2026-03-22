@@ -124,6 +124,28 @@ async function getAllUsers(req, res, next) {
   }
 }
 
+async function getUserById(req, res, next) {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(404).json({ error: { message: "User not found" } });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: { message: "User not found" } });
+    }
+
+    const id = user._id.toString();
+    res.json({
+      user: { ...user.toJSON(), userId: id },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createUser(req, res, next) {
   try {
     const {
@@ -270,4 +292,4 @@ async function updateUser(req, res, next) {
   }
 }
 
-module.exports = { getAllUsers, createUser, updateUser };
+module.exports = { getAllUsers, getUserById, createUser, updateUser };
