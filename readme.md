@@ -23,6 +23,7 @@
 # Branch: DEV-11
 ## Ticket: DEV-11
 ### Parent Branch: DEV-9
+### Pulled Branch: DEV-8
 ### Issues:
     - implement post creation functionality with post content.
     - While creating post with comments and likes are getting ignored.

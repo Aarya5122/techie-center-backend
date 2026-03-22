@@ -46,8 +46,12 @@ async function createPost(req, res, next) {
 
     let photoUrl = null;
     if (req.file) {
-      const uploadResult = await uploadToCloudinary(req.file.buffer);
-      photoUrl = uploadResult.secure_url;
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        photoUrl = uploadResult.secure_url;
+      } catch (uploadErr) {
+        return res.status(502).json({ error: { message: "Photo upload failed. Please try again." } });
+      }
     }
 
     const post = await Post.create({
