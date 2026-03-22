@@ -29,3 +29,12 @@
     - While creating post with comments and likes are getting ignored.
     - update createPost function to create post with photo.
     - In 201 response please send postId only in post object.
+
+# Branch: DEV-14
+## Ticket: DEV-14
+### Parent Branch: DEV-9
+### Pulled Branch: DEV-9
+### Issues:
+    - Implement deletion of post .
+### Resolution:
+    - Supported Deletion of post along with deletion of image in cloudinary.
