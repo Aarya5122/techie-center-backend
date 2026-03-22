@@ -47,7 +47,7 @@ async function createUser(req, res, next) {
 
     const userId = user._id.toString();
     res.status(201).json({
-      userId,
+      // userId,
       user: { ...user.toJSON(), userId },
     });
   } catch (err) {
