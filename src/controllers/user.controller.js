@@ -39,6 +39,19 @@ function updateEmptyRequiredFieldsPayload(missing) {
   };
 }
 
+async function getAllUsers(req, res, next) {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    const list = users.map((user) => {
+      const userId = user._id.toString();
+      return { ...user.toJSON(), userId };
+    });
+    res.json({ users: list });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createUser(req, res, next) {
   try {
     const {
@@ -185,4 +198,4 @@ async function updateUser(req, res, next) {
   }
 }
 
-module.exports = { createUser, updateUser };
+module.exports = { getAllUsers, createUser, updateUser };

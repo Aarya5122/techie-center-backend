@@ -1,8 +1,9 @@
 const { Router } = require("express");
-const { createUser, updateUser } = require("../controllers/user.controller");
+const { getAllUsers, createUser, updateUser } = require("../controllers/user.controller");
 
 const router = Router();
 
+router.get("/", getAllUsers);
 router.post("/", createUser);
 router.patch("/:userId", updateUser);
 
