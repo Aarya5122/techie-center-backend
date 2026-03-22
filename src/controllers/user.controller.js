@@ -29,6 +29,26 @@ function parsePositiveInt(value, fallback) {
   return n;
 }
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildUserListFilter(query) {
+  const raw = query.email;
+  const emailParam =
+    Array.isArray(raw) && raw.length > 0 ? raw[0] : raw;
+  if (typeof emailParam !== "string" || emailParam.trim() === "") {
+    return {};
+  }
+  const trimmed = emailParam.trim();
+  return {
+    email: {
+      $regex: escapeRegex(trimmed),
+      $options: "i",
+    },
+  };
+}
+
 function isMissingString(value) {
   return (
     value === undefined ||
@@ -73,9 +93,11 @@ async function getAllUsers(req, res, next) {
     const pageSize = Math.min(requestedSize, MAX_PAGE_SIZE);
     const skip = (page - 1) * pageSize;
 
+    const filter = buildUserListFilter(req.query);
+
     const [total, users] = await Promise.all([
-      User.countDocuments(),
-      User.find()
+      User.countDocuments(filter),
+      User.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize),
