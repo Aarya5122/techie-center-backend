@@ -54,3 +54,11 @@
     - Supported filter by email in a case insensitive,equals match flow.
     - Supported email validation.
     - Support decoded format of filter value.
+
+# Branch: DEV-17
+## Ticket: DEV-16
+### Parent Branch: DEV-8
+### Issues: 
+    - Implement user deletion functionality
+### Resolution: 
+    - Supported user deletion functionalities
