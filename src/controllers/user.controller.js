@@ -23,10 +23,18 @@ function isMissingString(value) {
   );
 }
 
-function missingRequiredFieldsPayload(missing) {
+function createMissingRequiredFieldsPayload(missing) {
   return {
     error: {
       message: `Missing required fields : ${missing.join(",")}`,
+    },
+  };
+}
+
+function updateEmptyRequiredFieldsPayload(missing) {
+  return {
+    error: {
+      message: `Following fields are required and cannot be set to empty : ${missing.join(",")}`,
     },
   };
 }
@@ -49,7 +57,7 @@ async function createUser(req, res, next) {
     if (isMissingString(password)) missing.push("password");
     if (isMissingString(name)) missing.push("name");
     if (missing.length > 0) {
-      return res.status(400).json(missingRequiredFieldsPayload(missing));
+      return res.status(400).json(createMissingRequiredFieldsPayload(missing));
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -80,9 +88,7 @@ async function updateUser(req, res, next) {
     const { userId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({
-        error: { message: "Invalid user id" },
-      });
+      return res.status(404).json({ error: { message: "User not found" } });
     }
 
     const body =
@@ -140,7 +146,7 @@ async function updateUser(req, res, next) {
     }
 
     if (missing.length > 0) {
-      return res.status(400).json(missingRequiredFieldsPayload(missing));
+      return res.status(400).json(updateEmptyRequiredFieldsPayload(missing));
     }
 
     if (Object.prototype.hasOwnProperty.call(updates, "password")) {
@@ -154,7 +160,7 @@ async function updateUser(req, res, next) {
       );
       if (!oldPasswordValid) {
         return res.status(401).json({
-          error: { message: "Current password is incorrect" },
+          error: { message: "Old password entered is invalid" },
         });
       }
       updates.password = await bcrypt.hash(updates.password, SALT_ROUNDS);
