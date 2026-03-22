@@ -51,3 +51,5 @@
     - Supported filter by email in a case insensitive, sub string match flow.
     - Supported get by id for user
     - Supported get all users
+    - Supported filter by email in a case insensitive,equals match flow.
+    - Supported email validation.
