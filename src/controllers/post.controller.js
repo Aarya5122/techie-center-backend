@@ -59,7 +59,8 @@ async function createPost(req, res, next) {
       ...(comments && { comments }),
     });
 
-    res.status(201).json({ post });
+    const postId = post._id.toString();
+    res.status(201).json({ post: { ...post.toJSON(), postId } });
   } catch (err) {
     next(err);
   }
