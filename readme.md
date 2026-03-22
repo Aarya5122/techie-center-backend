@@ -37,3 +37,28 @@
     - Handled issue related to validation
     - Handled error messages based on QA and DOC team inputs
     - Added single step verification for password change
+
+# Branch: DEV-17
+## Ticket: DEV-17
+### Parent Branch: DEV-8
+### Issues: 
+    - Implement user retrieval functionalities
+    - Support filter by email
+    - Support filter by id
+    - Support get all users
+### Resolution: 
+    - Supported user retrieval functionalities
+    - Supported filter by email in a case insensitive, sub string match flow.
+    - Supported get by id for user
+    - Supported get all users
+    - Supported filter by email in a case insensitive,equals match flow.
+    - Supported email validation.
+    - Support decoded format of filter value.
+
+# Branch: DEV-17
+## Ticket: DEV-16
+### Parent Branch: DEV-8
+### Issues: 
+    - Implement user deletion functionality
+### Resolution: 
+    - Supported user deletion functionalities
