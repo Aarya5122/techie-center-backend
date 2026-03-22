@@ -1,4 +1,18 @@
 const { Post } = require("../models/post.model");
+const { cloudinary } = require("../config/cloudinary");
+
+function uploadToCloudinary(buffer) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "techie-center/posts" },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+}
 
 function isMissingString(value) {
   return (
@@ -30,10 +44,17 @@ async function createPost(req, res, next) {
       return res.status(400).json({ error: { message: "comments must be an array of comment objects" } });
     }
 
+    let photoUrl = null;
+    if (req.file) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
+      photoUrl = uploadResult.secure_url;
+    }
+
     const post = await Post.create({
       content,
       category,
       userId,
+      photoUrl,
       ...(likes && { likes }),
       ...(comments && { comments }),
     });

@@ -1,6 +1,6 @@
+const config = require("./config"); // must be first — loads dotenv before any other module
 const mongoose = require("mongoose");
 const { app } = require("./app");
-const config = require("./config");
 
 async function start() {
   if (!config.mongoUri) {

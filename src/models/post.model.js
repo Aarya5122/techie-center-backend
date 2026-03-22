@@ -40,6 +40,10 @@ const postSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    photoUrl: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
