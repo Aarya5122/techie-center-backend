@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { User } = require("../models/user.model");
 const { isValidEmail, normalizeEmail } = require("../utils/email.util");
+const { parseFilterFromQueryParam } = require("../utils/queryFilter.util");
 
 const UPDATABLE_FIELDS = [
   "email",
@@ -34,34 +35,18 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function firstQueryValue(value) {
-  if (Array.isArray(value) && value.length > 0) {
-    return value[0];
-  }
-  return value;
-}
-
 /**
- * Query: filter as JSON string, shape { field, op, value }
- * e.g. ?filter={"field":"email","op":"eq","value":"user@example.com"}
+ * Query: filter = stringified JSON { field, op, value } — raw or URL-encoded.
  */
 function parseListFilterParam(query) {
-  const raw = firstQueryValue(query.filter);
-  if (raw === undefined || raw === null || raw === "") {
-    return { spec: null, error: null };
+  const { parsed, error: parseError } = parseFilterFromQueryParam(
+    query.filter
+  );
+  if (parseError) {
+    return { spec: null, error: parseError };
   }
-
-  let parsed;
-  if (typeof raw === "string") {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return { spec: null, error: "filter must be valid JSON." };
-    }
-  } else if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
-    parsed = raw;
-  } else {
-    return { spec: null, error: "filter must be a JSON object." };
+  if (!parsed) {
+    return { spec: null, error: null };
   }
 
   if (
@@ -123,10 +108,10 @@ function mongoFilterFromListSpec(spec) {
   const normalizedOp =
     op === "equals" ? "eq" : op === "like" ? "contains" : op;
 
-  if (!["eq", "contains"].includes(normalizedOp)) {
+  if (!["eq", "contains", "auto"].includes(normalizedOp)) {
     return {
       filter: {},
-      error: "filter op must be 'eq', 'contains'.",
+      error: "filter op must be 'eq', 'contains', or 'auto'.",
     };
   }
 
