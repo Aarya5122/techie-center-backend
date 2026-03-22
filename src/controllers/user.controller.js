@@ -23,6 +23,14 @@ function isMissingString(value) {
   );
 }
 
+function missingRequiredFieldsPayload(missing) {
+  return {
+    error: {
+      message: `Missing required fields : ${missing.join(",")}`,
+    },
+  };
+}
+
 async function createUser(req, res, next) {
   try {
     const {
@@ -41,7 +49,7 @@ async function createUser(req, res, next) {
     if (isMissingString(password)) missing.push("password");
     if (isMissingString(name)) missing.push("name");
     if (missing.length > 0) {
-      return res.status(400).json({ error: { message: `Missing required fields : ${missing?.join(",")}` } });
+      return res.status(400).json(missingRequiredFieldsPayload(missing));
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -100,29 +108,31 @@ async function updateUser(req, res, next) {
       });
     }
 
+    const missing = [];
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "password") &&
+      isMissingString(updates.password)
+    ) {
+      missing.push("password");
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "name") &&
+      isMissingString(updates.name)
+    ) {
+      missing.push("name");
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "email") &&
+      isMissingString(updates.email)
+    ) {
+      missing.push("email");
+    }
+    if (missing.length > 0) {
+      return res.status(400).json(missingRequiredFieldsPayload(missing));
+    }
+
     if (Object.prototype.hasOwnProperty.call(updates, "password")) {
-      if (isMissingString(updates.password)) {
-        return res.status(400).json({
-          error: { missing: ["password"] },
-        });
-      }
       updates.password = await bcrypt.hash(updates.password, SALT_ROUNDS);
-    }
-
-    if (Object.prototype.hasOwnProperty.call(updates, "name")) {
-      if (isMissingString(updates.name)) {
-        return res.status(400).json({
-          error: { missing: ["name"] },
-        });
-      }
-    }
-
-    if (Object.prototype.hasOwnProperty.call(updates, "email")) {
-      if (isMissingString(updates.email)) {
-        return res.status(400).json({
-          error: { missing: ["email"] },
-        });
-      }
     }
 
     const user = await User.findByIdAndUpdate(
