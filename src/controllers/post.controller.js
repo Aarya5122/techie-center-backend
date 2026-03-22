@@ -71,4 +71,36 @@ async function createPost(req, res, next) {
   }
 }
 
-module.exports = { createPost };
+async function deletePost(req, res, next) {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: { message: "Post not found" } });
+    }
+
+    if (post.photoUrl) {
+      try {
+        // Cloudinary requires the publicId (folder/filename without extension) to delete an asset.
+        // The secure_url format is: https://res.cloudinary.com/<cloud>/image/upload/v<version>/<folder>/<filename>.<ext>
+        // We split on "/upload/" to isolate everything after it, strip the version prefix (v1234567890/),
+        // and remove the file extension to get the exact publicId Cloudinary expects.
+        const afterUpload = post.photoUrl.split("/upload/")[1];
+        const publicId = afterUpload.replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId);
+      } catch (cloudinaryErr) {
+        console.error("Cloudinary delete error:", cloudinaryErr);
+        return res.status(502).json({ error: { message: "Failed to delete photo. Post not deleted." } });
+      }
+    }
+
+    await post.deleteOne();
+
+    res.status(200).json({ message: "Post deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { createPost, deletePost };
