@@ -6,8 +6,27 @@ function errorMiddleware(err, req, res, next) {
 
   if (err.name === "ValidationError") {
     status = 400;
-    message = "Validation failed";
-    details = Object.values(err.errors).map((e) => e.message);
+    const entries = Object.values(err.errors);
+    const missing = entries
+      .filter((e) => e.kind === "required")
+      .map((e) => e.path);
+    const invalid = Object.fromEntries(
+      entries
+        .filter((e) => e.kind !== "required")
+        .map((e) => [e.path, e.message])
+    );
+    const hasInvalid = Object.keys(invalid).length > 0;
+    if (process.env.NODE_ENV !== "production") {
+      console.error(err);
+    }
+    const payload = { error: {} };
+    if (missing.length > 0) payload.error.missing = missing;
+    if (hasInvalid) payload.error.invalid = invalid;
+    if (missing.length === 0 && !hasInvalid) {
+      payload.error.message = message;
+      payload.error.details = entries.map((e) => e.message);
+    }
+    return res.status(status).json(payload);
   } else if (err.code === 11000) {
     status = 409;
     message =
