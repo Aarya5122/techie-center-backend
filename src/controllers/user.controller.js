@@ -77,16 +77,26 @@ async function updateUser(req, res, next) {
       });
     }
 
+    const body =
+      req.body && typeof req.body === "object" && !Array.isArray(req.body)
+        ? req.body
+        : {};
+
     const updates = {};
     for (const key of UPDATABLE_FIELDS) {
-      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-        updates[key] = req.body[key];
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        updates[key] = body[key];
       }
     }
 
     if (Object.keys(updates).length === 0) {
-      return res.status(400).json({
-        error: { message: "No updatable fields in payload" },
+      const existing = await User.findById(userId);
+      if (!existing) {
+        return res.status(404).json({ error: { message: "User not found" } });
+      }
+      const id = existing._id.toString();
+      return res.status(200).json({
+        user: { ...existing.toJSON(), userId: id },
       });
     }
 
