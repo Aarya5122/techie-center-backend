@@ -62,3 +62,9 @@
     - Implement user deletion functionality
 ### Resolution: 
     - Supported user deletion functionalities
+
+# Branch: DEV-8
+## Ticket: DEV-8
+### Parent Branch: DEV-7
+### Resolution: 
+    - User management routes 1.0.0 release
