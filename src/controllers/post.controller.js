@@ -50,7 +50,8 @@ async function createPost(req, res, next) {
         const uploadResult = await uploadToCloudinary(req.file.buffer);
         photoUrl = uploadResult.secure_url;
       } catch (uploadErr) {
-        return res.status(502).json({ error: { message: "Photo upload failed. Please try again." } });
+        console.log("Cloudinary upload error:", uploadErr);
+        return res.status(500).json({ error: { message: "Photo upload failed. Please try again." } });
       }
     }
 
