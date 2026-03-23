@@ -29,3 +29,13 @@
     - While creating post with comments and likes are getting ignored.
     - update createPost function to create post with photo.
     - In 201 response please send postId only in post object.
+
+# Branch: DEV-15
+## Ticket: DEV-15
+### Parent Branch: DEV-9
+### Pulled Branch: DEV-9
+### Issues:
+    -Implement Retrieving all Posts
+    -Support filter for on user Id
+    -Support Pagination for retrieving posts
+    -Implement Rtrieving post by Id
