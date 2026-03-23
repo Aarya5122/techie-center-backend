@@ -71,4 +71,18 @@ async function createPost(req, res, next) {
   }
 }
 
-module.exports = { createPost };
+async function getAllPosts(_req, res, next) {
+  try {
+    const posts = await Post.find().sort({ createdAt: -1 });
+    const data = posts.map((post) => {
+      const postJson = post.toJSON();
+      return { ...postJson, postId: post._id.toString() };
+    });
+
+    res.status(200).json({ posts: data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { createPost, getAllPosts };

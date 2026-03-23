@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const multer = require("multer");
-const { createPost } = require("../controllers/post.controller");
+const { createPost, getAllPosts } = require("../controllers/post.controller");
 const { upload } = require("../middleware/upload.middleware");
 
 const router = Router();
@@ -17,6 +17,7 @@ function handleUpload(req, res, next) {
   });
 }
 
+router.get("/", getAllPosts);
 router.post("/", handleUpload, createPost);
 
 module.exports = { postRouter: router };
