@@ -76,10 +76,15 @@ async function getAllPosts(req, res, next) {
     const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 10, 1), 100);
     const skip = (page - 1) * limit;
+    const { userId } = req.query;
+    const filter = {};
+    if (!isMissingString(userId)) {
+      filter.userId = userId.trim();
+    }
 
     const [posts, total] = await Promise.all([
-      Post.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Post.countDocuments(),
+      Post.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Post.countDocuments(filter),
     ]);
 
     const data = posts.map((post) => {
@@ -96,6 +101,9 @@ async function getAllPosts(req, res, next) {
         totalPages: Math.ceil(total / limit),
         hasNextPage: page * limit < total,
         hasPrevPage: page > 1,
+      },
+      filters: {
+        userId: filter.userId || null,
       },
     });
   } catch (err) {
