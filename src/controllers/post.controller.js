@@ -111,6 +111,21 @@ async function getAllPosts(req, res, next) {
   }
 }
 
+async function getPostById(req, res, next) {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: { message: "Post not found" } });
+    }
+
+    res.status(200).json({ post: { ...post.toJSON(), postId: post._id.toString() } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function deletePost(req, res, next) {
   try {
     const { postId } = req.params;
@@ -143,4 +158,4 @@ async function deletePost(req, res, next) {
   }
 }
 
-module.exports = { createPost, getAllPosts, deletePost };
+module.exports = { createPost, getAllPosts, getPostById, deletePost };
