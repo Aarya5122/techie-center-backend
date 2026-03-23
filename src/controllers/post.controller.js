@@ -71,15 +71,33 @@ async function createPost(req, res, next) {
   }
 }
 
-async function getAllPosts(_req, res, next) {
+async function getAllPosts(req, res, next) {
   try {
-    const posts = await Post.find().sort({ createdAt: -1 });
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 10, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const [posts, total] = await Promise.all([
+      Post.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Post.countDocuments(),
+    ]);
+
     const data = posts.map((post) => {
       const postJson = post.toJSON();
       return { ...postJson, postId: post._id.toString() };
     });
 
-    res.status(200).json({ posts: data });
+    res.status(200).json({
+      posts: data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (err) {
     next(err);
   }
