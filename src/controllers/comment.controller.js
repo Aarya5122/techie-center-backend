@@ -29,7 +29,8 @@ async function addComment(req, res, next) {
     await post.save();
 
     const comment = post.comments[post.comments.length - 1];
-    res.status(201).json({ comment });
+    const commentId = comment._id.toString();
+    res.status(201).json({ comment: { ...comment.toJSON(), commentId } });
   } catch (err) {
     next(err);
   }
