@@ -76,6 +76,61 @@ async function createPost(req, res, next) {
   }
 }
 
+async function getAllPosts(req, res, next) {
+  try {
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 10, 1), 100);
+    const skip = (page - 1) * limit;
+    const { userId } = req.query;
+    const filter = {};
+    if (!isMissingString(userId)) {
+      filter.userId = userId.trim();
+    }
+
+    const [posts, total] = await Promise.all([
+      Post.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Post.countDocuments(filter),
+    ]);
+
+    const data = posts.map((post) => {
+      const postJson = post.toJSON();
+      return { ...postJson, postId: post._id.toString() };
+    });
+
+    res.status(200).json({
+      posts: data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+      },
+      filters: {
+        userId: filter.userId || null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getPostById(req, res, next) {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: { message: "Post not found" } });
+    }
+
+    res.status(200).json({ post: { ...post.toJSON(), postId: post._id.toString() } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function deletePost(req, res, next) {
   try {
     const { postId } = req.params;
@@ -166,5 +221,6 @@ async function updatePost(req, res, next) {
     next(err);
   }
 }
+module.exports = { createPost, getAllPosts, getPostById, deletePost, updatePost };
 
-module.exports = { createPost, deletePost, updatePost };
+
