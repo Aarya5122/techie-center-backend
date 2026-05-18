@@ -14,6 +14,11 @@ function uploadToCloudinary(buffer) {
   });
 }
 
+function getCloudinaryPublicId(photoUrl) {
+  const afterUpload = photoUrl.split("/upload/")[1];
+  return afterUpload.replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "");
+}
+
 function isMissingString(value) {
   return (
     value === undefined ||
@@ -82,12 +87,8 @@ async function deletePost(req, res, next) {
 
     if (post.photoUrl) {
       try {
-        // Cloudinary requires the publicId (folder/filename without extension) to delete an asset.
-        // The secure_url format is: https://res.cloudinary.com/<cloud>/image/upload/v<version>/<folder>/<filename>.<ext>
-        // We split on "/upload/" to isolate everything after it, strip the version prefix (v1234567890/),
-        // and remove the file extension to get the exact publicId Cloudinary expects.
-        const afterUpload = post.photoUrl.split("/upload/")[1];
-        const publicId = afterUpload.replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "");
+        // Cloudinary delete expects publicId in <folder>/<filename> format (no extension/version).
+        const publicId = getCloudinaryPublicId(post.photoUrl);
         await cloudinary.uploader.destroy(publicId);
       } catch (cloudinaryErr) {
         console.error("Cloudinary delete error:", cloudinaryErr);
@@ -103,4 +104,67 @@ async function deletePost(req, res, next) {
   }
 }
 
-module.exports = { createPost, deletePost };
+async function updatePost(req, res, next) {
+  try {
+    const { postId } = req.params;
+    const { content, category } = req.body;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: { message: "Post not found" } });
+    }
+
+    const isContentProvided = content !== undefined;
+    const isCategoryProvided = category !== undefined;
+    const isPhotoProvided = Boolean(req.file);
+
+    if (!isContentProvided && !isCategoryProvided && !isPhotoProvided) {
+      return res.status(400).json({
+        error: { message: "Provide at least one field to update: content, category, or photo" },
+      });
+    }
+
+    if (isContentProvided) {
+      if (isMissingString(content)) {
+        return res.status(400).json({ error: { message: "content cannot be empty" } });
+      }
+      post.content = content;
+    }
+
+    if (isCategoryProvided) {
+      if (isMissingString(category)) {
+        return res.status(400).json({ error: { message: "category cannot be empty" } });
+      }
+      post.category = category;
+    }
+
+    if (isPhotoProvided) {
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        const oldPhotoUrl = post.photoUrl;
+        post.photoUrl = uploadResult.secure_url;
+
+        if (oldPhotoUrl) {
+          try {
+            const oldPublicId = getCloudinaryPublicId(oldPhotoUrl);
+            await cloudinary.uploader.destroy(oldPublicId);
+          } catch (cloudinaryErr) {
+            console.error("Cloudinary old photo delete error:", cloudinaryErr);
+          }
+        }
+      } catch (uploadErr) {
+        console.error("Cloudinary upload error:", uploadErr);
+        return res.status(500).json({ error: { message: "Photo upload failed. Please try again." } });
+      }
+    }
+
+    await post.save();
+
+    const updatedPostId = post._id.toString();
+    res.status(200).json({ post: { ...post.toJSON(), postId: updatedPostId } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { createPost, deletePost, updatePost };

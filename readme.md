@@ -38,3 +38,13 @@
     - Implement deletion of post .
 ### Resolution:
     - Supported Deletion of post along with deletion of image in cloudinary.
+
+# Branch: DEV-13
+## Ticket: DEV-13
+### Parent Branch: DEV-9
+### Pulled Branch: DEV-9
+### Issues:
+    - Implement Add or Remove of Likes in posts(Like Controllers).
+    - Implement Add Update and Remove Comments in Comment Controllers.
+    - In 201 response please send commentId in response object
+    - Implement Updating of Content Photo and Category in Post
